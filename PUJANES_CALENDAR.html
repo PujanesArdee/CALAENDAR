@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2018 Calendar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-image: url("https://i.pinimg.com/1200x/7a/2b/0b/7a2b0b9b49911e648c9447257f57d825.jpg");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #1a202c;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .calendar-container {
+            backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.75);
+            border-radius: 20px;
+            padding: 2.5rem;
+            max-width: 1200px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+        }
+        .month-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        .month-card {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .month-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        }
+        .month-header {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            color: #4a5568;
+        }
+        .day-names {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-weight: bold;
+            color: #718096;
+            margin-bottom: 0.5rem;
+        }
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            text-align: center;
+        }
+        .day-cell {
+            padding: 0.5rem 0.25rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            user-select: none;
+            position: relative;
+        }
+        .day-cell:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        .day-cell.holiday {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            font-weight: 600;
+        }
+        .day-cell.holiday::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 8px;
+            height: 8px;
+            background-color: #ef4444;
+            border-radius: 50%;
+        }
+        .day-cell.today {
+            background-color: #3b82f6;
+            color: white;
+            font-weight: 700;
+        }
+        #message-box {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            z-index: 1000;
+        }
+        #message-box.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        @media (max-width: 640px) {
+            .calendar-container {
+                padding: 1.5rem;
+            }
+            .month-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="calendar-container">
+        <h1 class="text-4xl font-bold mb-8 text-center">2018 Calendar</h1>
+        <div class="month-grid"></div>
+    </div>
+    
+    <div id="message-box" class="text-center"></div>
+
+    <script>
+        const holidays = {
+            '1-1': 'New Year\'s Day',
+            '1-15': 'Martin Luther King, Jr. Day',
+            '2-19': 'Presidents\' Day',
+            '3-17': 'St. Patrick\'s Day',
+            '3-30': 'Good Friday',
+            '4-1': 'Easter Sunday',
+            '5-13': 'Mother\'s Day',
+            '5-28': 'Memorial Day',
+            '6-17': 'Father\'s Day',
+            '7-4': 'Independence Day',
+            '9-3': 'Labor Day',
+            '10-8': 'Columbus Day',
+            '10-31': 'Halloween',
+            '11-11': 'Veterans Day',
+            '11-22': 'Thanksgiving Day',
+            '12-25': 'Christmas Day'
+        };
+
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const messageBox = document.getElementById('message-box');
+        let messageTimeout;
+
+        function showMessage(message) {
+            clearTimeout(messageTimeout);
+            messageBox.textContent = message;
+            messageBox.classList.add('show');
+            messageTimeout = setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000);
+        }
+
+        function createCalendar() {
+            const calendarGrid = document.querySelector('.month-grid');
+
+            for (let i = 0; i < 12; i++) {
+                const month = createMonthCard(2018, i);
+                calendarGrid.appendChild(month);
+            }
+        }
+
+        function createMonthCard(year, monthIndex) {
+            const monthCard = document.createElement('div');
+            monthCard.className = 'month-card';
+
+            const monthHeader = document.createElement('div');
+            monthHeader.className = 'month-header';
+            monthHeader.textContent = monthNames[monthIndex] + ' ' + year;
+            monthCard.appendChild(monthHeader);
+
+            const dayNamesContainer = document.createElement('div');
+            dayNamesContainer.className = 'day-names';
+            dayNames.forEach(day => {
+                const dayName = document.createElement('div');
+                dayName.textContent = day;
+                dayNamesContainer.appendChild(dayName);
+            });
+            monthCard.appendChild(dayNamesContainer);
+
+            const daysGrid = document.createElement('div');
+            daysGrid.className = 'days-grid';
+
+            const firstDay = new Date(year, monthIndex, 1).getDay();
+            for (let i = 0; i < firstDay; i++) {
+                daysGrid.appendChild(document.createElement('div'));
+            }
+
+            const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'day-cell';
+                dayCell.textContent = day;
+
+                const dateKey = (monthIndex + 1) + '-' + day;
+                if (holidays[dateKey]) {
+                    dayCell.classList.add('holiday');
+                    dayCell.setAttribute('data-holiday', holidays[dateKey]);
+                }
+
+                dayCell.addEventListener('click', () => {
+                    let message = `${monthNames[monthIndex]} ${day}, ${year}`;
+                    if (holidays[dateKey]) {
+                        message += ` - ${holidays[dateKey]}`;
+                    }
+                    showMessage(`You selected: ${message}`);
+                });
+                daysGrid.appendChild(dayCell);
+            }
+
+            monthCard.appendChild(daysGrid);
+            return monthCard;
+        }
+
+        window.onload = createCalendar;
+    </script>
+
+</body>
+</html>
